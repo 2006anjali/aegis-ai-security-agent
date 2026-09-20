@@ -1,6 +1,33 @@
 import { useState } from 'react'
 import './App.css'
 
+const initialActivities = [
+  {
+    action: 'Payment Request',
+    agent: 'FinanceBot',
+    result: 'AUTHORIZED',
+    time: '2 min ago',
+  },
+  {
+    action: 'Portfolio Access',
+    agent: 'TradingBot',
+    result: 'AUTHORIZED',
+    time: '18 min ago',
+  },
+  {
+    action: 'Data Access',
+    agent: 'SupportAgent',
+    result: 'BLOCKED',
+    time: '42 min ago',
+  },
+  {
+    action: 'Permission Update',
+    agent: 'FinanceBot',
+    result: 'VERIFIED',
+    time: '1 hr ago',
+  },
+]
+
 function App() {
   const [activePage, setActivePage] = useState('Dashboard')
   const [walletConnected, setWalletConnected] = useState(false)
@@ -26,6 +53,10 @@ function App() {
 
   // Dynamic security metric
   const [threatsBlocked, setThreatsBlocked] = useState(7)
+
+  // Dynamic authorization activity history
+  const [activityLog, setActivityLog] =
+    useState(initialActivities)
 
   const stats = [
     {
@@ -75,33 +106,6 @@ function App() {
       status: 'Restricted',
       permission: 'No Data Access',
       icon: '◌',
-    },
-  ]
-
-  const activities = [
-    {
-      action: 'Payment Request',
-      agent: 'FinanceBot',
-      result: 'AUTHORIZED',
-      time: '2 min ago',
-    },
-    {
-      action: 'Portfolio Access',
-      agent: 'TradingBot',
-      result: 'AUTHORIZED',
-      time: '18 min ago',
-    },
-    {
-      action: 'Data Access',
-      agent: 'SupportAgent',
-      result: 'BLOCKED',
-      time: '42 min ago',
-    },
-    {
-      action: 'Permission Update',
-      agent: 'FinanceBot',
-      result: 'VERIFIED',
-      time: '1 hr ago',
     },
   ]
 
@@ -278,6 +282,7 @@ function App() {
     }
 
     setAuthorizationStatus('verifying')
+
     setAuthorizationResult(
       `Checking ${selectedAction} for ${selectedAgent} against the private permission state...`,
     )
@@ -287,8 +292,26 @@ function App() {
         authorizationRules[selectedAgent]?.[selectedAction] ??
         false
 
+      const verificationResult = isAuthorized
+        ? 'AUTHORIZED'
+        : 'BLOCKED'
+
+      // Add the latest verification event to the activity log.
+      const newActivity = {
+        action: selectedAction,
+        agent: selectedAgent,
+        result: verificationResult,
+        time: 'Just now',
+      }
+
+      setActivityLog((current) => [
+        newActivity,
+        ...current,
+      ].slice(0, 6))
+
       if (isAuthorized) {
         setAuthorizationStatus('authorized')
+
         setAuthorizationResult(
           `${selectedAction} is authorized for ${selectedAgent}. The private permission value was not displayed.`,
         )
@@ -297,6 +320,7 @@ function App() {
         setThreatsBlocked((current) => current + 1)
 
         setAuthorizationStatus('blocked')
+
         setAuthorizationResult(
           `${selectedAction} is blocked for ${selectedAgent}. The private permission value was not displayed.`,
         )
@@ -868,7 +892,7 @@ function App() {
               </h3>
 
               <p>
-                Private verification events from your
+                Live verification events from your
                 security layer
               </p>
             </div>
@@ -886,10 +910,10 @@ function App() {
               <span>TIME</span>
             </div>
 
-            {activities.map((item, index) => (
+            {activityLog.map((item, index) => (
               <div
                 className="activity-row"
-                key={index}
+                key={`${item.action}-${item.agent}-${item.time}-${index}`}
               >
                 <strong>{item.action}</strong>
 
