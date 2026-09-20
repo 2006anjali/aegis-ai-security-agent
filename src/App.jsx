@@ -8,6 +8,10 @@ function App() {
   const [walletError, setWalletError] = useState('')
   const [isConnecting, setIsConnecting] = useState(false)
 
+  // Authorization state
+  const [authorizationStatus, setAuthorizationStatus] = useState('idle')
+  const [authorizationResult, setAuthorizationResult] = useState('')
+
   const stats = [
     {
       label: 'Protected Actions',
@@ -131,7 +135,10 @@ function App() {
       // Read the shielded Midnight address
       const addresses = await connected.getShieldedAddresses()
 
-      console.log('Midnight shielded address:', addresses.shieldedAddress)
+      console.log(
+        'Midnight shielded address:',
+        addresses.shieldedAddress,
+      )
 
       setWalletConnected(true)
       setWalletAddress(addresses.shieldedAddress || '')
@@ -155,14 +162,36 @@ function App() {
     setWalletConnected(false)
     setWalletAddress('')
     setWalletError('')
+    setAuthorizationStatus('idle')
+    setAuthorizationResult('')
   }
 
   const handleEmergencyLock = () => {
     alert('Emergency Lock activated')
   }
 
+  // Temporary UI verification flow.
+  // This will later be replaced by the real Midnight Compact circuit call.
   const handleAuthorization = () => {
-    alert('Authorization circuit verification started')
+    if (!walletConnected) {
+      setAuthorizationStatus('blocked')
+      setAuthorizationResult(
+        'Connect Lace before running an authorization check.',
+      )
+      return
+    }
+
+    setAuthorizationStatus('verifying')
+    setAuthorizationResult(
+      'Checking the requested action against the private permission state...',
+    )
+
+    window.setTimeout(() => {
+      setAuthorizationStatus('authorized')
+      setAuthorizationResult(
+        'Authorization verified. Sensitive permission values were not displayed.',
+      )
+    }, 1200)
   }
 
   return (
@@ -471,20 +500,40 @@ function App() {
 
             <div className="authorization-box">
               <div className="shield-large">
-                🛡
+                {authorizationStatus === 'verifying'
+                  ? '◌'
+                  : authorizationStatus === 'authorized'
+                    ? '✓'
+                    : authorizationStatus === 'blocked'
+                      ? '!'
+                      : '🛡'}
               </div>
 
               <div className="authorization-content">
                 <span className="mini-label">
-                  READY TO VERIFY
+                  {authorizationStatus === 'verifying'
+                    ? 'VERIFYING'
+                    : authorizationStatus === 'authorized'
+                      ? 'AUTHORIZED'
+                      : authorizationStatus === 'blocked'
+                        ? 'ACTION REQUIRED'
+                        : 'READY TO VERIFY'}
                 </span>
 
-                <h4>Action-specific proof</h4>
+                <h4>
+                  {authorizationStatus === 'verifying'
+                    ? 'Checking private permission'
+                    : authorizationStatus === 'authorized'
+                      ? 'Authorization verified'
+                      : authorizationStatus === 'blocked'
+                        ? 'Lace connection required'
+                        : 'Action-specific proof'}
+                </h4>
 
                 <p>
-                  AEGIS checks whether an agent has
-                  permission to perform an action using a
-                  private Midnight circuit.
+                  {authorizationStatus === 'idle'
+                    ? 'AEGIS checks whether an agent has permission to perform an action using a private Midnight circuit.'
+                    : authorizationResult}
                 </p>
               </div>
             </div>
@@ -492,8 +541,14 @@ function App() {
             <button
               className="verify-button"
               onClick={handleAuthorization}
+              disabled={authorizationStatus === 'verifying'}
             >
-              Verify Authorization
+              {authorizationStatus === 'verifying'
+                ? 'Verifying...'
+                : authorizationStatus === 'authorized'
+                  ? 'Verify Again'
+                  : 'Verify Authorization'}
+
               <span>→</span>
             </button>
           </div>
