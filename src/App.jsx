@@ -24,6 +24,9 @@ function App() {
   const [emergencyLocked, setEmergencyLocked] =
     useState(false)
 
+  // Dynamic security metric
+  const [threatsBlocked, setThreatsBlocked] = useState(7)
+
   const stats = [
     {
       label: 'Protected Actions',
@@ -45,7 +48,7 @@ function App() {
     },
     {
       label: 'Threats Blocked',
-      value: '07',
+      value: String(threatsBlocked).padStart(2, '0'),
       change: '+3',
       icon: '⚡',
     },
@@ -290,6 +293,9 @@ function App() {
           `${selectedAction} is authorized for ${selectedAgent}. The private permission value was not displayed.`,
         )
       } else {
+        // Increment the security counter for blocked requests.
+        setThreatsBlocked((current) => current + 1)
+
         setAuthorizationStatus('blocked')
         setAuthorizationResult(
           `${selectedAction} is blocked for ${selectedAgent}. The private permission value was not displayed.`,
@@ -306,6 +312,7 @@ function App() {
 
           <div>
             <div className="brand-name">AEGIS</div>
+
             <div className="brand-subtitle">
               AI SECURITY AGENT
             </div>
