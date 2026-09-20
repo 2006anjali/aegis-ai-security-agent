@@ -9,8 +9,16 @@ function App() {
   const [isConnecting, setIsConnecting] = useState(false)
 
   // Authorization state
-  const [authorizationStatus, setAuthorizationStatus] = useState('idle')
-  const [authorizationResult, setAuthorizationResult] = useState('')
+  const [authorizationStatus, setAuthorizationStatus] =
+    useState('idle')
+  const [authorizationResult, setAuthorizationResult] =
+    useState('')
+
+  // Selected authorization request
+  const [selectedAgent, setSelectedAgent] =
+    useState('FinanceBot')
+  const [selectedAction, setSelectedAction] =
+    useState('Payment Request')
 
   const stats = [
     {
@@ -89,6 +97,48 @@ function App() {
       time: '1 hr ago',
     },
   ]
+
+  // Available simulated actions for each AI agent.
+  // These will later map to private permission state
+  // inside the real Midnight Compact circuit.
+  const agentActions = {
+    FinanceBot: [
+      'Payment Request',
+      'Portfolio Access',
+      'Data Access',
+    ],
+    TradingBot: [
+      'Portfolio Access',
+      'Payment Request',
+      'Data Access',
+    ],
+    SupportAgent: [
+      'Data Access',
+      'Payment Request',
+      'Portfolio Access',
+    ],
+  }
+
+  // Simulated private authorization rules.
+  // The real implementation will replace these with
+  // private Midnight contract state.
+  const authorizationRules = {
+    FinanceBot: {
+      'Payment Request': true,
+      'Portfolio Access': false,
+      'Data Access': false,
+    },
+    TradingBot: {
+      'Portfolio Access': true,
+      'Payment Request': false,
+      'Data Access': false,
+    },
+    SupportAgent: {
+      'Data Access': false,
+      'Payment Request': false,
+      'Portfolio Access': false,
+    },
+  }
 
   // REAL LACE + MIDNIGHT CONNECTION
   const handleConnect = async () => {
@@ -170,8 +220,24 @@ function App() {
     alert('Emergency Lock activated')
   }
 
-  // Temporary UI verification flow.
-  // This will later be replaced by the real Midnight Compact circuit call.
+  const handleAgentChange = (event) => {
+    const nextAgent = event.target.value
+    const nextAction = agentActions[nextAgent][0]
+
+    setSelectedAgent(nextAgent)
+    setSelectedAction(nextAction)
+    setAuthorizationStatus('idle')
+    setAuthorizationResult('')
+  }
+
+  const handleActionChange = (event) => {
+    setSelectedAction(event.target.value)
+    setAuthorizationStatus('idle')
+    setAuthorizationResult('')
+  }
+
+  // Temporary UI authorization flow.
+  // This will later be replaced with the real Midnight Compact circuit call.
   const handleAuthorization = () => {
     if (!walletConnected) {
       setAuthorizationStatus('blocked')
@@ -183,14 +249,25 @@ function App() {
 
     setAuthorizationStatus('verifying')
     setAuthorizationResult(
-      'Checking the requested action against the private permission state...',
+      `Checking ${selectedAction} for ${selectedAgent} against the private permission state...`,
     )
 
     window.setTimeout(() => {
-      setAuthorizationStatus('authorized')
-      setAuthorizationResult(
-        'Authorization verified. Sensitive permission values were not displayed.',
-      )
+      const isAuthorized =
+        authorizationRules[selectedAgent]?.[selectedAction] ??
+        false
+
+      if (isAuthorized) {
+        setAuthorizationStatus('authorized')
+        setAuthorizationResult(
+          `${selectedAction} is authorized for ${selectedAgent}. The private permission value was not displayed.`,
+        )
+      } else {
+        setAuthorizationStatus('blocked')
+        setAuthorizationResult(
+          `${selectedAction} is blocked for ${selectedAgent}. The private permission value was not displayed.`,
+        )
+      }
     }, 1200)
   }
 
@@ -246,7 +323,9 @@ function App() {
             </button>
           ))}
 
-          <p className="nav-label second-label">SECURITY</p>
+          <p className="nav-label second-label">
+            SECURITY
+          </p>
 
           <button
             className="nav-item"
@@ -334,7 +413,8 @@ function App() {
               padding: '14px 18px',
               borderRadius: '12px',
               background: 'rgba(239, 68, 68, 0.10)',
-              border: '1px solid rgba(239, 68, 68, 0.30)',
+              border:
+                '1px solid rgba(239, 68, 68, 0.30)',
               color: '#ff7b7b',
               fontSize: '14px',
             }}
@@ -366,8 +446,10 @@ function App() {
               marginBottom: '24px',
               padding: '16px 20px',
               borderRadius: '14px',
-              background: 'rgba(34, 197, 94, 0.06)',
-              border: '1px solid rgba(34, 197, 94, 0.20)',
+              background:
+                'rgba(34, 197, 94, 0.06)',
+              border:
+                '1px solid rgba(34, 197, 94, 0.20)',
             }}
           >
             <div
@@ -387,7 +469,9 @@ function App() {
                 }}
               ></span>
 
-              <strong>Midnight Preview Connected</strong>
+              <strong>
+                Midnight Preview Connected
+              </strong>
             </div>
 
             <div
@@ -492,47 +576,149 @@ function App() {
                 <h3>Private Authorization</h3>
 
                 <p>
-                  Verify an action without exposing private
-                  data
+                  Verify an action without exposing
+                  private data
                 </p>
               </div>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns:
+                  '1fr 1fr',
+                gap: '12px',
+                marginBottom: '16px',
+              }}
+            >
+              <label
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '7px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  opacity: 0.8,
+                }}
+              >
+                AI AGENT
+
+                <select
+                  value={selectedAgent}
+                  onChange={handleAgentChange}
+                  style={{
+                    width: '100%',
+                    padding: '11px 12px',
+                    borderRadius: '10px',
+                    border:
+                      '1px solid rgba(148, 163, 184, 0.20)',
+                    background:
+                      'rgba(15, 23, 42, 0.55)',
+                    color: 'inherit',
+                    outline: 'none',
+                  }}
+                >
+                  {agents.map((agent) => (
+                    <option
+                      key={agent.name}
+                      value={agent.name}
+                      style={{
+                        background: '#111827',
+                      }}
+                    >
+                      {agent.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '7px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  opacity: 0.8,
+                }}
+              >
+                REQUESTED ACTION
+
+                <select
+                  value={selectedAction}
+                  onChange={handleActionChange}
+                  style={{
+                    width: '100%',
+                    padding: '11px 12px',
+                    borderRadius: '10px',
+                    border:
+                      '1px solid rgba(148, 163, 184, 0.20)',
+                    background:
+                      'rgba(15, 23, 42, 0.55)',
+                    color: 'inherit',
+                    outline: 'none',
+                  }}
+                >
+                  {agentActions[selectedAgent].map(
+                    (action) => (
+                      <option
+                        key={action}
+                        value={action}
+                        style={{
+                          background: '#111827',
+                        }}
+                      >
+                        {action}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
             </div>
 
             <div className="authorization-box">
               <div className="shield-large">
                 {authorizationStatus === 'verifying'
                   ? '◌'
-                  : authorizationStatus === 'authorized'
+                  : authorizationStatus ===
+                      'authorized'
                     ? '✓'
-                    : authorizationStatus === 'blocked'
+                    : authorizationStatus ===
+                        'blocked'
                       ? '!'
                       : '🛡'}
               </div>
 
               <div className="authorization-content">
                 <span className="mini-label">
-                  {authorizationStatus === 'verifying'
+                  {authorizationStatus ===
+                  'verifying'
                     ? 'VERIFYING'
-                    : authorizationStatus === 'authorized'
+                    : authorizationStatus ===
+                        'authorized'
                       ? 'AUTHORIZED'
-                      : authorizationStatus === 'blocked'
-                        ? 'ACTION REQUIRED'
+                      : authorizationStatus ===
+                          'blocked'
+                        ? 'BLOCKED'
                         : 'READY TO VERIFY'}
                 </span>
 
                 <h4>
-                  {authorizationStatus === 'verifying'
+                  {authorizationStatus ===
+                  'verifying'
                     ? 'Checking private permission'
-                    : authorizationStatus === 'authorized'
+                    : authorizationStatus ===
+                        'authorized'
                       ? 'Authorization verified'
-                      : authorizationStatus === 'blocked'
-                        ? 'Lace connection required'
+                      : authorizationStatus ===
+                          'blocked'
+                        ? 'Authorization denied'
                         : 'Action-specific proof'}
                 </h4>
 
                 <p>
                   {authorizationStatus === 'idle'
-                    ? 'AEGIS checks whether an agent has permission to perform an action using a private Midnight circuit.'
+                    ? `Verify whether ${selectedAgent} can perform ${selectedAction} using a private Midnight authorization rule.`
                     : authorizationResult}
                 </p>
               </div>
@@ -541,13 +727,20 @@ function App() {
             <button
               className="verify-button"
               onClick={handleAuthorization}
-              disabled={authorizationStatus === 'verifying'}
+              disabled={
+                authorizationStatus === 'verifying'
+              }
             >
-              {authorizationStatus === 'verifying'
+              {authorizationStatus ===
+              'verifying'
                 ? 'Verifying...'
-                : authorizationStatus === 'authorized'
+                : authorizationStatus ===
+                    'authorized'
                   ? 'Verify Again'
-                  : 'Verify Authorization'}
+                  : authorizationStatus ===
+                      'blocked'
+                    ? 'Check Again'
+                    : 'Verify Authorization'}
 
               <span>→</span>
             </button>
