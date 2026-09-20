@@ -58,6 +58,10 @@ function App() {
   const [activityLog, setActivityLog] =
     useState(initialActivities)
 
+  // Privacy verification receipt
+  const [verificationReceipt, setVerificationReceipt] =
+    useState(null)
+
   const stats = [
     {
       label: 'Protected Actions',
@@ -225,6 +229,7 @@ function App() {
     setWalletError('')
     setAuthorizationStatus('idle')
     setAuthorizationResult('')
+    setVerificationReceipt(null)
   }
 
   // Emergency Lock
@@ -237,6 +242,7 @@ function App() {
         setAuthorizationResult(
           'Emergency Lock is active. Authorization requests are temporarily blocked.',
         )
+        setVerificationReceipt(null)
       } else {
         setAuthorizationStatus('idle')
         setAuthorizationResult('')
@@ -254,12 +260,14 @@ function App() {
     setSelectedAction(nextAction)
     setAuthorizationStatus('idle')
     setAuthorizationResult('')
+    setVerificationReceipt(null)
   }
 
   const handleActionChange = (event) => {
     setSelectedAction(event.target.value)
     setAuthorizationStatus('idle')
     setAuthorizationResult('')
+    setVerificationReceipt(null)
   }
 
   // Temporary UI authorization flow.
@@ -270,6 +278,7 @@ function App() {
       setAuthorizationResult(
         'Emergency Lock is active. Disable the lock before verifying a request.',
       )
+      setVerificationReceipt(null)
       return
     }
 
@@ -278,8 +287,12 @@ function App() {
       setAuthorizationResult(
         'Connect Lace before running an authorization check.',
       )
+      setVerificationReceipt(null)
       return
     }
+
+    // Clear the previous receipt before starting a new verification.
+    setVerificationReceipt(null)
 
     setAuthorizationStatus('verifying')
 
@@ -295,6 +308,19 @@ function App() {
       const verificationResult = isAuthorized
         ? 'AUTHORIZED'
         : 'BLOCKED'
+
+      // Create a privacy verification receipt.
+      // The underlying permission value is intentionally not included.
+      const receipt = {
+        id: `AEGIS-${Date.now()}`,
+        agent: selectedAgent,
+        action: selectedAction,
+        result: verificationResult,
+        verifiedAt: new Date().toLocaleTimeString(),
+        privateStateExposed: false,
+      }
+
+      setVerificationReceipt(receipt)
 
       // Add the latest verification event to the activity log.
       const newActivity = {
@@ -491,7 +517,8 @@ function App() {
               margin: '20px 0',
               padding: '14px 18px',
               borderRadius: '12px',
-              background: 'rgba(239, 68, 68, 0.10)',
+              background:
+                'rgba(239, 68, 68, 0.10)',
               border:
                 '1px solid rgba(239, 68, 68, 0.30)',
               color: '#ff7b7b',
@@ -509,7 +536,8 @@ function App() {
               margin: '20px 0',
               padding: '14px 18px',
               borderRadius: '12px',
-              background: 'rgba(239, 68, 68, 0.10)',
+              background:
+                'rgba(239, 68, 68, 0.10)',
               border:
                 '1px solid rgba(239, 68, 68, 0.30)',
               color: '#ff8a8a',
@@ -522,7 +550,9 @@ function App() {
             <span style={{ fontSize: '18px' }}>⚠</span>
 
             <div>
-              <strong>Emergency Lock Active</strong>
+              <strong>
+                Emergency Lock Active
+              </strong>
 
               <div
                 style={{
@@ -530,8 +560,8 @@ function App() {
                   opacity: 0.8,
                 }}
               >
-                All authorization requests are temporarily
-                blocked.
+                All authorization requests are
+                temporarily blocked.
               </div>
             </div>
           </div>
@@ -730,7 +760,8 @@ function App() {
                       'rgba(15, 23, 42, 0.55)',
                     color: 'inherit',
                     outline: 'none',
-                    opacity: emergencyLocked ? 0.5 : 1,
+                    opacity:
+                      emergencyLocked ? 0.5 : 1,
                     cursor: emergencyLocked
                       ? 'not-allowed'
                       : 'pointer',
@@ -776,7 +807,8 @@ function App() {
                       'rgba(15, 23, 42, 0.55)',
                     color: 'inherit',
                     outline: 'none',
-                    opacity: emergencyLocked ? 0.5 : 1,
+                    opacity:
+                      emergencyLocked ? 0.5 : 1,
                     cursor: emergencyLocked
                       ? 'not-allowed'
                       : 'pointer',
@@ -881,6 +913,99 @@ function App() {
 
               <span>→</span>
             </button>
+
+            {verificationReceipt && (
+              <div
+                style={{
+                  marginTop: '14px',
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  background:
+                    'rgba(59, 130, 246, 0.06)',
+                  border:
+                    '1px solid rgba(59, 130, 246, 0.18)',
+                  fontSize: '12px',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent:
+                      'space-between',
+                    alignItems: 'center',
+                    gap: '12px',
+                    marginBottom: '10px',
+                  }}
+                >
+                  <strong>
+                    Privacy Verification Receipt
+                  </strong>
+
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      letterSpacing: '0.08em',
+                      opacity: 0.7,
+                    }}
+                  >
+                    PRIVATE STATE HIDDEN
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns:
+                      '1fr 1fr',
+                    gap: '8px',
+                  }}
+                >
+                  <span>
+                    Agent:{' '}
+                    <strong>
+                      {verificationReceipt.agent}
+                    </strong>
+                  </span>
+
+                  <span>
+                    Action:{' '}
+                    <strong>
+                      {verificationReceipt.action}
+                    </strong>
+                  </span>
+
+                  <span>
+                    Result:{' '}
+                    <strong>
+                      {verificationReceipt.result}
+                    </strong>
+                  </span>
+
+                  <span>
+                    State exposed:{' '}
+                    <strong>
+                      {verificationReceipt.privateStateExposed
+                        ? 'Yes'
+                        : 'No'}
+                    </strong>
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: '10px',
+                    opacity: 0.55,
+                    wordBreak: 'break-all',
+                  }}
+                >
+                  Receipt ID:{' '}
+                  {verificationReceipt.id}
+                  <br />
+                  Verified at:{' '}
+                  {verificationReceipt.verifiedAt}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
