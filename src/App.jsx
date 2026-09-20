@@ -20,6 +20,10 @@ function App() {
   const [selectedAction, setSelectedAction] =
     useState('Payment Request')
 
+  // Emergency security lock
+  const [emergencyLocked, setEmergencyLocked] =
+    useState(false)
+
   const stats = [
     {
       label: 'Protected Actions',
@@ -216,8 +220,23 @@ function App() {
     setAuthorizationResult('')
   }
 
+  // Emergency Lock
   const handleEmergencyLock = () => {
-    alert('Emergency Lock activated')
+    setEmergencyLocked((current) => {
+      const nextState = !current
+
+      if (nextState) {
+        setAuthorizationStatus('blocked')
+        setAuthorizationResult(
+          'Emergency Lock is active. Authorization requests are temporarily blocked.',
+        )
+      } else {
+        setAuthorizationStatus('idle')
+        setAuthorizationResult('')
+      }
+
+      return nextState
+    })
   }
 
   const handleAgentChange = (event) => {
@@ -239,6 +258,14 @@ function App() {
   // Temporary UI authorization flow.
   // This will later be replaced with the real Midnight Compact circuit call.
   const handleAuthorization = () => {
+    if (emergencyLocked) {
+      setAuthorizationStatus('blocked')
+      setAuthorizationResult(
+        'Emergency Lock is active. Disable the lock before verifying a request.',
+      )
+      return
+    }
+
     if (!walletConnected) {
       setAuthorizationStatus('blocked')
       setAuthorizationResult(
@@ -286,11 +313,27 @@ function App() {
         </div>
 
         <div className="security-status">
-          <span className="status-dot"></span>
+          <span
+            className="status-dot"
+            style={{
+              background: emergencyLocked
+                ? '#ef4444'
+                : undefined,
+            }}
+          ></span>
 
           <div>
-            <strong>System Protected</strong>
-            <span>All systems operational</span>
+            <strong>
+              {emergencyLocked
+                ? 'Emergency Lock Active'
+                : 'System Protected'}
+            </strong>
+
+            <span>
+              {emergencyLocked
+                ? 'Authorization requests blocked'
+                : 'All systems operational'}
+            </span>
           </div>
         </div>
 
@@ -331,8 +374,13 @@ function App() {
             className="nav-item"
             onClick={handleEmergencyLock}
           >
-            <span className="nav-icon">⚠</span>
-            Emergency Lock
+            <span className="nav-icon">
+              {emergencyLocked ? '🔓' : '⚠'}
+            </span>
+
+            {emergencyLocked
+              ? 'Disable Emergency Lock'
+              : 'Emergency Lock'}
           </button>
         </nav>
 
@@ -421,6 +469,40 @@ function App() {
           >
             <strong>Lace Connection Error:</strong>{' '}
             {walletError}
+          </div>
+        )}
+
+        {emergencyLocked && (
+          <div
+            style={{
+              margin: '20px 0',
+              padding: '14px 18px',
+              borderRadius: '12px',
+              background: 'rgba(239, 68, 68, 0.10)',
+              border:
+                '1px solid rgba(239, 68, 68, 0.30)',
+              color: '#ff8a8a',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontSize: '14px',
+            }}
+          >
+            <span style={{ fontSize: '18px' }}>⚠</span>
+
+            <div>
+              <strong>Emergency Lock Active</strong>
+
+              <div
+                style={{
+                  marginTop: '3px',
+                  opacity: 0.8,
+                }}
+              >
+                All authorization requests are temporarily
+                blocked.
+              </div>
+            </div>
           </div>
         )}
 
@@ -606,6 +688,7 @@ function App() {
                 <select
                   value={selectedAgent}
                   onChange={handleAgentChange}
+                  disabled={emergencyLocked}
                   style={{
                     width: '100%',
                     padding: '11px 12px',
@@ -616,6 +699,10 @@ function App() {
                       'rgba(15, 23, 42, 0.55)',
                     color: 'inherit',
                     outline: 'none',
+                    opacity: emergencyLocked ? 0.5 : 1,
+                    cursor: emergencyLocked
+                      ? 'not-allowed'
+                      : 'pointer',
                   }}
                 >
                   {agents.map((agent) => (
@@ -647,6 +734,7 @@ function App() {
                 <select
                   value={selectedAction}
                   onChange={handleActionChange}
+                  disabled={emergencyLocked}
                   style={{
                     width: '100%',
                     padding: '11px 12px',
@@ -657,6 +745,10 @@ function App() {
                       'rgba(15, 23, 42, 0.55)',
                     color: 'inherit',
                     outline: 'none',
+                    opacity: emergencyLocked ? 0.5 : 1,
+                    cursor: emergencyLocked
+                      ? 'not-allowed'
+                      : 'pointer',
                   }}
                 >
                   {agentActions[selectedAgent].map(
@@ -678,48 +770,58 @@ function App() {
 
             <div className="authorization-box">
               <div className="shield-large">
-                {authorizationStatus === 'verifying'
-                  ? '◌'
+                {emergencyLocked
+                  ? '!'
                   : authorizationStatus ===
-                      'authorized'
-                    ? '✓'
+                      'verifying'
+                    ? '◌'
                     : authorizationStatus ===
-                        'blocked'
-                      ? '!'
-                      : '🛡'}
+                        'authorized'
+                      ? '✓'
+                      : authorizationStatus ===
+                          'blocked'
+                        ? '!'
+                        : '🛡'}
               </div>
 
               <div className="authorization-content">
                 <span className="mini-label">
-                  {authorizationStatus ===
-                  'verifying'
-                    ? 'VERIFYING'
+                  {emergencyLocked
+                    ? 'LOCKED'
                     : authorizationStatus ===
-                        'authorized'
-                      ? 'AUTHORIZED'
+                        'verifying'
+                      ? 'VERIFYING'
                       : authorizationStatus ===
-                          'blocked'
-                        ? 'BLOCKED'
-                        : 'READY TO VERIFY'}
+                          'authorized'
+                        ? 'AUTHORIZED'
+                        : authorizationStatus ===
+                            'blocked'
+                          ? 'BLOCKED'
+                          : 'READY TO VERIFY'}
                 </span>
 
                 <h4>
-                  {authorizationStatus ===
-                  'verifying'
-                    ? 'Checking private permission'
+                  {emergencyLocked
+                    ? 'Emergency security lock'
                     : authorizationStatus ===
-                        'authorized'
-                      ? 'Authorization verified'
+                        'verifying'
+                      ? 'Checking private permission'
                       : authorizationStatus ===
-                          'blocked'
-                        ? 'Authorization denied'
-                        : 'Action-specific proof'}
+                          'authorized'
+                        ? 'Authorization verified'
+                        : authorizationStatus ===
+                            'blocked'
+                          ? 'Authorization denied'
+                          : 'Action-specific proof'}
                 </h4>
 
                 <p>
-                  {authorizationStatus === 'idle'
-                    ? `Verify whether ${selectedAgent} can perform ${selectedAction} using a private Midnight authorization rule.`
-                    : authorizationResult}
+                  {emergencyLocked
+                    ? 'Authorization requests are paused until the emergency lock is disabled.'
+                    : authorizationStatus ===
+                        'idle'
+                      ? `Verify whether ${selectedAgent} can perform ${selectedAction} using a private Midnight authorization rule.`
+                      : authorizationResult}
                 </p>
               </div>
             </div>
@@ -728,19 +830,23 @@ function App() {
               className="verify-button"
               onClick={handleAuthorization}
               disabled={
-                authorizationStatus === 'verifying'
+                emergencyLocked ||
+                authorizationStatus ===
+                  'verifying'
               }
             >
-              {authorizationStatus ===
-              'verifying'
-                ? 'Verifying...'
+              {emergencyLocked
+                ? 'Authorization Locked'
                 : authorizationStatus ===
-                    'authorized'
-                  ? 'Verify Again'
+                    'verifying'
+                  ? 'Verifying...'
                   : authorizationStatus ===
-                      'blocked'
-                    ? 'Check Again'
-                    : 'Verify Authorization'}
+                      'authorized'
+                    ? 'Verify Again'
+                    : authorizationStatus ===
+                        'blocked'
+                      ? 'Check Again'
+                      : 'Verify Authorization'}
 
               <span>→</span>
             </button>
