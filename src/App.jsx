@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { prepareAuthorizationCall } from './midnight/contract.js'
 import './App.css'
 
 const initialActivities = [
