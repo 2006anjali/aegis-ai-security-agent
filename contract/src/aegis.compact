@@ -1,0 +1,51 @@
+pragma language_version 0.23;
+
+import CompactStandardLibrary;
+
+// Private permission witnesses.
+// These values are supplied privately by the user-side application.
+witness canPay(): Boolean;
+witness canTrade(): Boolean;
+witness canAccessData(): Boolean;
+
+// Public audit state.
+// The underlying private permission is never stored here.
+export ledger verificationCount: Counter;
+export ledger lastDecision: Boolean;
+
+// Resolve the requested action using private witness data.
+//
+// Action mapping:
+// 0 = Payment Request
+// 1 = Portfolio Access
+// 2 = Data Access
+circuit resolvePermission(action: Uint<8>): Boolean {
+    if (action == 0) {
+        return canPay();
+    }
+
+    if (action == 1) {
+        return canTrade();
+    }
+
+    if (action == 2) {
+        return canAccessData();
+    }
+
+    // Unknown actions fail closed.
+    return false;
+}
+
+// Verify an action using private permission data.
+// Only the resulting decision is disclosed.
+export circuit verifyAuthorization(action: Uint<8>): Boolean {
+    const allowed = resolvePermission(action);
+
+    // Record that a verification occurred.
+    verificationCount.increment(1);
+
+    // Publish only the resulting authorization decision.
+    lastDecision = disclose(allowed);
+
+    return disclose(allowed);
+}

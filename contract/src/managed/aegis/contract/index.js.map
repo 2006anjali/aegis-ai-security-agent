@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "file": "index.js",
+  "sourceRoot": "../../../../../",
+  "sources": ["contract/src/aegis.compact"],
+  "names": [],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAAA;;;;;;;;;;;;;;;;;;;MAwCA,AAAA,mBAUC;;;;;cAVkC,QAAe;;;;;;;;;;;;;;;;;;yCAAf,QAAe;;;;;;;;;qDAAf,QAAe;;;OAUjD;;;;;;;;GAAC;EAlDF;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAYA;;;;;;;;;yEAAyC;IACzC;;;;;;;;;yEAAoC;;;;;;;GAqClC;EA5CF,AAAA,SAA0B;;0DAA1B,MAA0B;;;;;;;;;;;;;;GAAA;EAC1B,AAAA,WAA4B;;0DAA5B,QAA4B;;;;;;;;;;;;;;GAAA;EAC5B,AAAA,gBAAiC;;0DAAjC,aAAiC;;;;;;;;;;;;;;GAAA;EAajC,AAAA,oBAeC,4BAfyB,QAAe;sBACjC,QAAM;;;wBAIN,QAAM;;;0BAIN,QAAM;;;;;;;GAMb;EAID,AAAA,sBAUC,4BAVkC,QAAe;UACxC,SAAmC;;gDAAP,QAAM;UAGxC,KAAiB;IAAjB;;;;;;;;;;6FAAA,KAAiB;;;;wEAAA;IAGjB;;;;;;;2HAAwB,SAAO;;yEAAnB;WAEI,SAAO;GAC1B;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAtCD;qCAAA;;;;;;;;;;;0GAAyC;KAAA;IACzC;qCAAA;;;;;;;;;;;0GAAoC;KAAA;;;;;;;;;;;;;;"
+}
