@@ -1,5 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { prepareAuthorizationCall } from './midnight/contract.js'
+import {
+  callVerifyAuthorization,
+  createAuthorizationCircuit,
+} from './midnight/circuit.js'
 import './App.css'
 
 const initialActivities = [
@@ -35,6 +39,8 @@ function App() {
   const [walletAddress, setWalletAddress] = useState('')
   const [walletError, setWalletError] = useState('')
   const [isConnecting, setIsConnecting] = useState(false)
+  const laceApiRef = useRef(null)
+  const circuitRef = useRef(null)
 
   // Authorization state
   const [authorizationStatus, setAuthorizationStatus] =
@@ -183,6 +189,7 @@ function App() {
 
       // Connect specifically to Midnight Preview
       const connected = await lace.connect('preview')
+      laceApiRef.current = connected
 
       // Confirm connection status
       const status = await connected.getConnectionStatus()
@@ -225,6 +232,7 @@ function App() {
   // Midnight DApp Connector v4 does not expose a disconnect()
   // method, so we clear the DApp's local connection state.
   const handleDisconnect = () => {
+    laceApiRef.current = null
     setWalletConnected(false)
     setWalletAddress('')
     setWalletError('')
@@ -1083,3 +1091,9 @@ function App() {
 }
 
 export default App
+
+
+
+
+
+
