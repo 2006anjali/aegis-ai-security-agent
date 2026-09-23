@@ -2,7 +2,6 @@ import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { webcrypto } from 'node:crypto';
 import { Buffer } from 'node:buffer';
 import * as Rx from 'rxjs';
 import pino from 'pino';
@@ -35,6 +34,7 @@ import { witnesses, initialPrivateState } from './witnesses.js';
 // @ts-ignore
 globalThis.WebSocket = WebSocket;
 
+
 const logger = pino({ level: 'info' });
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ENV_PATH = path.join(ROOT, '.env');
@@ -42,8 +42,8 @@ const ZK_CONFIG_PATH = path.join(ROOT, 'contract/src/managed/aegis');
 
 const config = {
   networkId: 'preprod',
-  indexer: 'https://indexer.preprod.midnight.network/api/v4/graphql',
-  indexerWS: 'wss://indexer.preprod.midnight.network/api/v4/graphql/ws',
+  indexer: 'https://indexer.preprod.midnight.network/api/v3/graphql',
+  indexerWS: 'wss://indexer.preprod.midnight.network/api/v3/graphql/ws',
   node: 'wss://rpc.preprod.midnight.network',
   proofServer: 'http://127.0.0.1:6300',
 };
@@ -111,6 +111,8 @@ const initWalletWithSeed = async (seed: Buffer): Promise<WalletContext> => {
     dust: () => DustWallet(dustConfig).startWithSecretKey(dustSecretKey, ledger.LedgerParameters.initialParameters().dust),
   } as any);
   await facade.start(shieldedSecretKeys, dustSecretKey);
+  const debugState: any = await Rx.firstValueFrom(facade.state());
+  logger.info(`DEBUG WALLET STATE: ${JSON.stringify(debugState, (_, v) => typeof v === 'bigint' ? v.toString() : v)}`);
 
   return { wallet: facade, shieldedSecretKeys, dustSecretKey, unshieldedKeystore };
 };
@@ -202,7 +204,7 @@ async function main() {
     logger.info('New Preprod wallet created and saved in .env (not printed).');
   }
   if (!process.env.MIDNIGHT_STORAGE_PASSWORD) {
-    const pw = 'Ae!' + Buffer.from(webcrypto.getRandomValues(new Uint8Array(24))).toString('base64url') + '#9';
+    const pw = 'Ae!' + Buffer.from(crypto.getRandomValues(new Uint8Array(24))).toString('base64url') + '#9';
     appendEnv('MIDNIGHT_STORAGE_PASSWORD', pw);
   }
   const storagePassword = process.env.MIDNIGHT_STORAGE_PASSWORD!;
