@@ -141,27 +141,6 @@ function App() {
     ],
   }
 
-  // Simulated private authorization rules.
-  // The real implementation will replace these with
-  // private Midnight contract state.
-  const authorizationRules = {
-    FinanceBot: {
-      'Payment Request': true,
-      'Portfolio Access': false,
-      'Data Access': false,
-    },
-    TradingBot: {
-      'Portfolio Access': true,
-      'Payment Request': false,
-      'Data Access': false,
-    },
-    SupportAgent: {
-      'Data Access': false,
-      'Payment Request': false,
-      'Portfolio Access': false,
-    },
-  }
-
   // REAL LACE + MIDNIGHT CONNECTION
   const handleConnect = async () => {
     try {
@@ -281,7 +260,7 @@ function App() {
 
   // Temporary UI authorization flow.
   // This will later be replaced with the real Midnight Compact circuit call.
-  const handleAuthorization = () => {
+  const handleAuthorization = async () => {
     if (emergencyLocked) {
       setAuthorizationStatus('blocked')
       setAuthorizationResult(
@@ -291,7 +270,7 @@ function App() {
       return
     }
 
-    if (!walletConnected) {
+    if (!walletConnected || !laceApiRef.current) {
       setAuthorizationStatus('blocked')
       setAuthorizationResult(
         'Connect Lace before running an authorization check.',
@@ -300,26 +279,40 @@ function App() {
       return
     }
 
-    // Clear the previous receipt before starting a new verification.
     setVerificationReceipt(null)
-
     setAuthorizationStatus('verifying')
-
     setAuthorizationResult(
       `Checking ${selectedAction} for ${selectedAgent} against the private permission state...`,
     )
 
-    window.setTimeout(() => {
+    try {
+      const prepared = prepareAuthorizationCall(selectedAction)
+
+      if (!prepared.ready) {
+        throw new Error(prepared.reason)
+      }
+
+      if (!circuitRef.current) {
+        circuitRef.current = await createAuthorizationCircuit(
+          laceApiRef.current,
+          prepared.contractAddress,
+        )
+      }
+
+      const result = await callVerifyAuthorization(
+        circuitRef.current,
+        prepared.action,
+      )
+
       const isAuthorized =
-        authorizationRules[selectedAgent]?.[selectedAction] ??
-        false
+        result?.result?.status === 'successful' ||
+        result?.result === true ||
+        result === true
 
       const verificationResult = isAuthorized
         ? 'AUTHORIZED'
         : 'BLOCKED'
 
-      // Create a privacy verification receipt.
-      // The underlying permission value is intentionally not included.
       const receipt = {
         id: `AEGIS-${Date.now()}`,
         agent: selectedAgent,
@@ -331,7 +324,6 @@ function App() {
 
       setVerificationReceipt(receipt)
 
-      // Add the latest verification event to the activity log.
       const newActivity = {
         action: selectedAction,
         agent: selectedAgent,
@@ -346,23 +338,28 @@ function App() {
 
       if (isAuthorized) {
         setAuthorizationStatus('authorized')
-
         setAuthorizationResult(
           `${selectedAction} is authorized for ${selectedAgent}. The private permission value was not displayed.`,
         )
       } else {
-        // Increment the security counter for blocked requests.
         setThreatsBlocked((current) => current + 1)
-
         setAuthorizationStatus('blocked')
-
         setAuthorizationResult(
           `${selectedAction} is blocked for ${selectedAgent}. The private permission value was not displayed.`,
         )
       }
-    }, 1200)
-  }
+    } catch (error) {
+      console.error('Authorization circuit error:', error)
 
+      circuitRef.current = null
+      setAuthorizationStatus('blocked')
+      setAuthorizationResult(
+        error?.message ||
+          'The Midnight authorization circuit could not be executed.',
+      )
+      setVerificationReceipt(null)
+    }
+  }
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -1091,6 +1088,9 @@ function App() {
 }
 
 export default App
+
+
+
 
 
 

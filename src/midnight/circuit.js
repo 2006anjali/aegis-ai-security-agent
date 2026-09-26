@@ -1,6 +1,5 @@
 import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js'
 import { createCircuitCallTxInterface } from '@midnight-ntwrk/midnight-js-contracts'
-import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider'
 import { Contract } from '../../contract/src/managed/aegis/contract/index.js'
 import { browserWitnesses } from './private-state.js'
 import { createBrowserPrivateStateProvider } from './private-state-provider.js'
@@ -28,8 +27,16 @@ export async function createAuthorizationCircuit(
   }
 
   if (!contractAddress) {
-    throw new Error('AEGIS Preprod contract address is not configured.')
+    throw new Error(
+      'AEGIS Preprod contract address is not configured.',
+    )
   }
+
+  // Load the indexer provider only when the circuit is actually needed.
+  // This keeps the heavy indexer dependency out of the initial UI bundle.
+  const { indexerPublicDataProvider } = await import(
+    '@midnight-ntwrk/midnight-js-indexer-public-data-provider'
+  )
 
   const zkConfigProvider = createZkConfigProvider()
   const proofProvider = await createLaceProofProvider(laceApi)
@@ -38,11 +45,14 @@ export async function createAuthorizationCircuit(
   const midnightProvider = createLaceMidnightProvider(laceApi)
 
   const privateStateProvider = createBrowserPrivateStateProvider()
+
   privateStateProvider.setContractAddress(contractAddress)
 
+  // Explicitly provide the browser's native WebSocket implementation.
   const publicDataProvider = indexerPublicDataProvider(
     INDEXER_URL,
     INDEXER_WS_URL,
+    globalThis.WebSocket,
   )
 
   const compiledContract = CompiledContract.make(
@@ -84,3 +94,4 @@ export async function callVerifyAuthorization(
     BigInt(actionCode),
   )
 }
+
